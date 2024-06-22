@@ -1,1 +1,40 @@
+pipeline {
+    agent any  // or specify a label, e.g., agent { label 'dev-server' }
+    
+    stages {
+        stage("code"){
+            steps{
+                git url: "https://github.com/KunalNamdas/react_django_demo_app-main.git", branch: "main"
+                echo 'Code cloning....'
+            }
+        }
+        stage("build and test"){
+            steps{
+                sh "docker build -t react_django_demo_app ."
+                echo 'code build.....'
+            }
+        }
+        stage("scan image"){
+            steps{
+                echo 'image scanning .....'
+            }
+        }
+        stage("push"){
+            steps{
+                withCredentials([usernamePassword(credentialsId:"dockerHub", passwordVariable:"dockerHubPass", usernameVariable:"dockerHubUser")]){
+                    sh "docker login -u ${env.dockerHubUser} -p ${env.dockerHubPass}"
+                    sh "docker tag react_django_demo_app:latest ${env.dockerHubUser}/react_django_demo_app:latest"
+                    sh "docker push ${env.dockerHubUser}/react_django_demo_app:latest"
+                    echo 'image push.....'
+                }
+            }
+        }
+        stage("deploy"){
+            steps{
+                sh "docker-compose down && docker-compose up -d"
+                echo 'deployment ho gayi'
+            }
+        }
+    }
+}
 
